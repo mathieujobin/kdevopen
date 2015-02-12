@@ -1,4 +1,47 @@
 #!/usr/bin/env ruby
 
-puts 'hello world'
+puts __FILE__
 
+
+module KOpen
+	class Launcher
+		attr_accessor :path
+
+		def initialize(file_or_dirname)
+			@path = file_or_dirname
+			exit_on_file_not_found
+		end
+
+		# refactor into multiple objects, eliminate this case statement.
+		def open
+			case file_type
+			when 'inode/directory'
+				KOpen # ::Launchers::Kate # // Kdevelop
+			when 'image'
+			else
+				raise "unknown file type >#{file_type}<"
+			end
+		end
+
+		def file_type
+			#TODO: should have a way not to fork to a shell command...
+			# look into cocaine or ruby-filemagic gems
+			@file_type ||= begin
+				cmd = ["file", "--brief", "--mime-type", path]
+				IO.popen(cmd, in: :close, err: :close) { |io| io.read.chomp }
+			end
+		end
+
+		def exit_on_file_not_found
+			raise 'file not found' unless File.exist?(path)
+		end
+	end
+end
+
+if ARGV.empty?
+  puts "nothing to do, enjoy your day"
+else
+  ARGV.each do |arg|
+    KOpen::Launcher.new(arg).open
+  end
+end
